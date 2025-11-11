@@ -4,37 +4,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>
+        payment - Smart Parking
+    </title>
+    <script type="text/javascript" src="https://www.payhere.lk/lib/payhere.js"></script>
+    <script src="script.js"></script>
 </head>
 
 <body>
-    <script src="script.js"></script>
-    <script type="text/javascript" src="https://www.payhere.lk/lib/payhere.js"></script>
-
     <?php
     include("./includes/database.php");
     session_start();
 
-    $logged_user = $_SESSION['logged_user'];
-    $sql_check_is_paid = "SELECT * FROM activity WHERE uid = {$logged_user} and i_date != ''and o_date != '' and price != 0 and paid = 0";
-    $result_check_is_paid = $conn->query($sql_check_is_paid);
+    $cookie_name = "user";
+    $logged_user = $_COOKIE[$cookie_name] ?? null;
 
-    if ($result_check_is_paid->num_rows > 0) {
-        while ($row_check_is_paid = $result_check_is_paid->fetch_assoc()) {
-            $activity_id = $row_check_is_paid["id"];
-            $i_date = $row_check_is_paid["i_date"];
-            $i_time = $row_check_is_paid["i_time"];
-            $o_date = $row_check_is_paid["o_date"];
-            $o_time = $row_check_is_paid["o_time"];
-            $price = $row_check_is_paid["price"];
+    if (!$logged_user) {
+        echo "<p>User not logged in.</p>";
+        exit;
+    }
 
-            // echo "
-    
-            //     <script>
-            //         paymentGateWay()
-            //     </script>
-            // ";
-        }
+    $sql = "SELECT * FROM activity 
+            WHERE uid = {$logged_user} 
+              AND i_date != '' 
+              AND o_date != '' 
+              AND price != 0 
+              AND paid = 0 
+            LIMIT 1";
+    $result = $conn->query($sql);
+
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $_SESSION["price"] = $row["price"];
+        $_SESSION["activity_id"] = $row["id"];
+
+        echo '<script>paymentGateWay();</script>';
+    } else {
+        echo "<p>No pending payments found.</p>";
     }
     ?>
 </body>

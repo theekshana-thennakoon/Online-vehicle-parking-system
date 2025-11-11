@@ -7,8 +7,12 @@
 
 <body>
     <?php
-    if (!isset($_SESSION['logged_user'])) {
+    $cookie_name = "user";
+    if (!isset($_COOKIE[$cookie_name])) {
+        echo "not set";
         header("Location:./login.php");
+    } else {
+        header("Location:./slots.php");
     }
     ?>
 </body>

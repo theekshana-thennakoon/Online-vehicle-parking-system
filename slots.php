@@ -1,10 +1,14 @@
 <?php
 include("./includes/database.php");
 session_start();
-if (!isset($_SESSION['logged_user'])) {
+$cookie_name = "user";
+$userExit = isset($_SESSION['user_exit']);
+if (!isset($_COOKIE[$cookie_name])) {
     header("Location:./login.php");
 }
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -16,7 +20,7 @@ if (!isset($_SESSION['logged_user'])) {
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Parking Slots - Speed Parking</title>
+    <title>Parking Slots - Smart Parking</title>
 
     <!-- Custom fonts for this template-->
     <link href="./includes/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -26,6 +30,12 @@ if (!isset($_SESSION['logged_user'])) {
 
     <!-- Custom styles for this template-->
     <link href="./includes/css/sb-admin-2.min.css" rel="stylesheet">
+    <style>
+        a:hover {
+            text-decoration: none;
+        }
+    </style>
+
 
 </head>
 
@@ -63,27 +73,58 @@ if (!isset($_SESSION['logged_user'])) {
 
                     </div>
 
-                    <div class="row" id="show-payment-method-row">
+                    <div class="row" id="display-parking-slot-row">
 
 
                     </div>
 
+                    <!-- <div class="row" id="show-payment-method-row">
 
 
-                    <div class="mt-3 d-sm-flex text-center mb-4">
-                        <a href="./qr.php" class="btn btn-primary text-center text-white">
-                            <h1 class="h5 px-5 py-2 mb-0 text-center">Park Me</h1>
+                    </div> -->
+
+                    <div class="my-3">
+
+                        <div class="row">
+                            <div class="col">
+                                <i class="fa fa-square text-success" aria-hidden="true">
+                                    Available Slots
+                                </i>
+                            </div>
+                            <div class="col">
+                                <i class="fa fa-square text-primary" aria-hidden="true">
+                                    Your Booked Slots
+                                </i>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <i class="fa fa-square text-danger" aria-hidden="true">
+                                    You / Other Parked Slots
+                                </i>
+                            </div>
+                            <div class="col">
+                                <i class="fa fa-square text-secondary" aria-hidden="true">
+                                    Disabled Slots
+                                </i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 text-center mb-4">
+                        <a href="./qr.php" class="btn btn-dark text-center text-white">
+                            <h1 class="h5 px-5 py-2 mb-0 text-center">Park Me / Exit me</h1>
                         </a>
                     </div>
 
                     <hr>
 
-                    <div class="mt-4 d-sm-flex align-items-center justify-content-between mb-4">
+                    <div class="mt-5 align-items-center justify-content-between mb-4">
                         <h1 class="h3 mb-0 text-gray-800 text-center">Book parking slot</h1>
                         <h1 class="h6 mb-0 text-gray-800 text-center">
                             If you need to book the parking slot, you can book it click following button
                             <br><br>
-                            <a href="./booking.php" class="btn btn-primary text-white">Book parking slot</a>
+                            <a href="./booking.php" class="btn btn-dark text-white px-4 py-3">Book parking slot</a>
                         </h1>
                     </div>
                 </div>
@@ -96,7 +137,7 @@ if (!isset($_SESSION['logged_user'])) {
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; The Speed Parking</span>
+                        <span>Copyright &copy; The Smart Parking</span>
                     </div>
                 </div>
             </footer>
@@ -150,9 +191,83 @@ if (!isset($_SESSION['logged_user'])) {
                 }
             });
         }
-
         // Set interval to refresh every 2 seconds
         setInterval(refreshCheckPayment, 2000);
+    </script>
+
+
+    <script>
+        // Function to refresh the content inside the row div
+        function displayParkingSlots() {
+            $.ajax({
+                url: 'display_slot_no.php', // A PHP file to fetch the updated data
+                method: 'GET',
+                success: function(data) {
+                    $('#display-parking-slot-row').html(data); // Replace the content inside the row div
+                }
+            });
+        }
+
+        // Set interval to refresh every 2 seconds
+        setInterval(displayParkingSlots, 3000);
+    </script>
+
+
+    <!-- SweetAlert -->
+    <script src="./includes/sweetalert.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+    <!-- Firebase Initialization -->
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCV2TegSk-r8seMnc4KmBJxDCnreX9yLBw",
+            authDomain: "parking-gate-d54d5.firebaseapp.com",
+            databaseURL: "https://parking-gate-d54d5-default-rtdb.firebaseio.com",
+            projectId: "parking-gate-d54d5",
+            storageBucket: "parking-gate-d54d5.firebasestorage.app",
+            messagingSenderId: "650184790827",
+            appId: "1:650184790827:web:941dec87e5819509ffeb6e",
+            measurementId: "G-FFNZ3S80Z8"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
+
+        // Gate status update function
+        function updateGateStatus(status) {
+            firebase.database().ref('gate_status/current').set({
+                status: status,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                console.log("Gate status updated to: " + status);
+            }).catch(error => {
+                console.error("Error updating gate status: ", error);
+            });
+        }
+
+        // Handle session messages
+        $(document).ready(function() {
+            <?php if ($userExit): ?>
+                updateGateStatus(1);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thank you',
+                    text: 'Come Again!',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+                <?php
+                // Remove session after updating gate status
+                unset($_SESSION['user_exit']);
+                ?>
+            <?php endif; ?>
+        });
     </script>
 
 </body>

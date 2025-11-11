@@ -1,6 +1,7 @@
 <?php
 session_start();
-if (isset($_SESSION['logged_user'])) {
+$cookie_name = "user";
+if (isset($_COOKIE[$cookie_name])) {
     header("Location:./slots.php");
 }
 ?>
@@ -15,7 +16,7 @@ if (isset($_SESSION['logged_user'])) {
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Login - Speed Parking</title>
+    <title>Login - Smart Parking</title>
 
     <!-- Custom fonts for this template-->
     <link href="./includes/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -28,7 +29,7 @@ if (isset($_SESSION['logged_user'])) {
 
 </head>
 
-<body class="bg-gradient-primary">
+<body class="bg-gradient-dark">
     <script src="./includes/sweetalert.js"></script>
     <div class="container">
 
@@ -47,9 +48,9 @@ if (isset($_SESSION['logged_user'])) {
                             <div class="col-lg-6">
                                 <div class="p-5">
                                     <div class="text-center">
-                                        <h1 class="h4 text-primary mb-4">
+                                        <h1 class="h4 text-dark mb-4">
                                             <i class="fas fa-car"></i>
-                                            Speed Parking
+                                            Smart Parking
                                         </h1>
                                         <h1 class="h4 text-gray-900 mb-4">Login</h1>
                                     </div>
@@ -63,7 +64,7 @@ if (isset($_SESSION['logged_user'])) {
                                             <input type="password" class="form-control form-control-user"
                                                 id="exampleInputPassword" placeholder="Password" name="pwd">
                                         </div>
-                                        <button type="submit" name="login" class="btn btn-primary btn-user btn-block">
+                                        <button type="submit" name="login" class="btn btn-dark btn-user btn-block">
                                             Login
                                         </button>
                                     </form>
@@ -93,6 +94,7 @@ if (isset($_SESSION['logged_user'])) {
     <script src="./includes/js/sb-admin-2.min.js"></script>
     <?php
     if (isset($_SESSION['wrong_user'])) {
+
         echo "
                 <script>
                     Swal.fire({

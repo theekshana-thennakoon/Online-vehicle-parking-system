@@ -1,39 +1,64 @@
 <?php
 session_start();
-$amount = 500;
-$merchant_id = "1229520";
-$merchant_secret = "MzE4MTgxNTQ1NjMwNjI4NTcwNTEzNDY4MTIxNDQwMjI3NzAwMjQ2Nw==";
-$order_id = uniqid();
+include("./includes/database.php");
+
+$cookie_name = "user";
+$logged_user = $_COOKIE[$cookie_name] ?? null;
+
+if (!$logged_user) {
+    echo json_encode(["error" => "User not logged in"]);
+    exit;
+}
+
+$sql = "SELECT * FROM activity 
+        WHERE uid = {$logged_user} 
+          AND i_date != '' 
+          AND o_date != '' 
+          AND price != 0 
+          AND paid = 0 
+        LIMIT 1";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+    $amount = (float)$row["price"];
+} else {
+    $amount = 0;
+}
+
+// === PayHere Config ===
+$merchant_id = "1229520"; // Sandbox Merchant ID
+$merchant_secret = "MzE4MTgxNTQ1NjMwNjI4NTcwNTEzNDY4MTIxNDQwMjI3NzAwMjQ2Nw=="; // Plaintext secret key, not Base64
+$order_id = uniqid("ORD_");
 $currency = "LKR";
 
+// === Generate Hash ===
 $hash = strtoupper(
     md5(
         $merchant_id .
-        $order_id .
-        number_format($amount, 2, '.', '') .
-        $currency .
-        strtoupper(md5($merchant_secret))
+            $order_id .
+            number_format($amount, 2, '.', '') .
+            $currency .
+            strtoupper(md5($merchant_secret))
     )
 );
-//echo $hash;
 
-$array = [];
-$array["amount"] = $amount;
-$array["merchant_id"] = $merchant_id;
-$array["merchant_secret"] = $merchant_secret;
-$array["order_id"] = $order_id;
-$array["currency"] = $currency;
-$array["items"] = "Vehical parking fee";
-$array["hash"] = $hash;
-$array["first_name"] = "Theekshana";
-$array["last_name"] = "Thennakoon";
-$array["email"] = "theekshanathennakoonict@gmail.com";
-$array["phone"] = "0771234567";
-$array["address"] = "No.1, Galle Road";
-$array["city"] = "Colombo";
+// === Return JSON ===
+$data = [
+    "sandbox" => true,
+    "merchant_id" => $merchant_id,
+    "order_id" => $order_id,
+    "items" => "Vehical parking fee",
+    "amount" => number_format($amount, 2, '.', ''),
+    "currency" => $currency,
+    "hash" => $hash,
+    "first_name" => "Theekshana",
+    "last_name" => "Thennakoon",
+    "email" => "theekshanathennakoonict@gmail.com",
+    "phone" => "0771234567",
+    "address" => "No.1, Galle Road",
+    "city" => "Colombo"
+];
 
-$jsonObj = json_encode($array);
-
-//echo $hash;
-echo $jsonObj;
-?>
+header('Content-Type: application/json');
+echo json_encode($data);

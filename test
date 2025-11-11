@@ -1,52 +1,44 @@
-// Global flag to track payment completion
-var paymentCompleted = false;
-var completedOrderId = null;
-
 function paymentGateWay() {
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = () => {
         if (xhttp.readyState == 4 && xhttp.status == 200) {
             var obj = JSON.parse(xhttp.responseText);
 
-            var siteOrigin = window.location.origin;
-            var updateUrl = siteOrigin + "/updatePayment.php";
+            var siteOrigin = "http://localhost"; // Change to your domain in production
+            var updateUrl = siteOrigin + "/updatePayment.php?order_id=" + encodeURIComponent(obj.order_id);
             var cancelUrl = siteOrigin + "/slots.php";
 
             // ========== PayHere event handlers ==========
             payhere.onCompleted = function (orderId) {
+                alert("Payment completed. OrderID: " + orderId);
                 console.log("✅ Payment completed. OrderID:", orderId);
-
-                // Set flag and order ID
-                paymentCompleted = true;
-                completedOrderId = orderId;
-
-                // Immediate redirect attempt
-                var redirectUrl = "./updatePayment.php";
-                console.log("Attempting redirect to:", redirectUrl);
-
-                var redirectUrl = "./updatePayment.php";
-                window.location.href = redirectUrl;
-
-                // Try immediate redirect
+                // Redirect the parent page (checkpayment.php) to updatePayment.php
                 try {
-                    window.location.replace(redirectUrl);
-                } catch (e) {
-                    console.error("Redirect error:", e);
-                    window.location.href = redirectUrl;
+                    // If the gateway is in an iframe or overlay
+                    if (window.top !== window) {
+                        // window.top.location.href = updateUrl;
+                        window.top.location.href = "./updatePayment.php?order_id=" + encodeURIComponent(orderId);
+                    } else {
+                        // Normal page
+                        // window.location.href = updateUrl;
+                        window.location.href = "./updatePayment.php?order_id=" + encodeURIComponent(orderId);
+                    }
+
+                    // If opened in a popup
+                    if (window.opener) {
+                        // window.opener.location.href = updateUrl;
+                        window.opener.location.href = "./updatePayment.php?order_id=" + encodeURIComponent(orderId);
+                        window.close();
+                    }
+                } catch (err) {
+                    console.warn("Redirect failed, fallback:", err);
+                    // window.location.href = updateUrl;
+                    window.location.href = "./updatePayment.php?order_id=" + encodeURIComponent(orderId);
                 }
             };
 
             payhere.onDismissed = function () {
                 console.log("❌ Payment dismissed.");
-
-                // Check if payment was completed before dismissal
-                if (paymentCompleted && completedOrderId) {
-                    console.log("Payment was completed, redirecting after modal close...");
-                    var redirectUrl = "./updatePayment.php";
-                    window.location.href = redirectUrl;
-                } else {
-                    alert("Payment was cancelled.");
-                }
             };
 
             payhere.onError = function (error) {
@@ -73,8 +65,8 @@ function paymentGateWay() {
                 address: obj.address,
                 city: obj.city,
                 country: "Sri Lanka",
-                delivery_address: obj.delivery_address || "No. 46, Galle road, Kalutara South",
-                delivery_city: obj.delivery_city || "Kalutara",
+                delivery_address: "No. 46, Galle road, Kalutara South",
+                delivery_city: "Kalutara",
                 delivery_country: "Sri Lanka",
                 custom_1: obj.custom_1 || "",
                 custom_2: obj.custom_2 || ""
@@ -88,11 +80,21 @@ function paymentGateWay() {
     xhttp.send();
 }
 
-// Polling function to check for completed payment
-setInterval(function () {
-    if (paymentCompleted && completedOrderId) {
-        console.log("Polling detected completed payment, forcing redirect...");
-        var redirectUrl = "./updatePayment.php";
-        window.location.href = redirectUrl;
+
+
+
+
+
+
+
+if ($activity_id) {
+    $sql = "UPDATE activity SET paid = 1 WHERE id = $activity_id";
+    if ($conn->query($sql)) {
+        // $_SESSION['user_exit'] = 1;
+        // header("Location: ./slots.php");
+    } else {
+        echo "Database update failed.";
     }
-}, 500);
+} else {
+    echo "Invalid data.";
+}
